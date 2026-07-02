@@ -285,6 +285,7 @@ public class BoardView : MonoBehaviour
         if (renderer != null && data != null)
         {
             renderer.sprite = data.sprite;
+            renderer.color = GetTileColor(data); // Apply color tinting
         }
 
         tileViews[spawn.DestX, spawn.DestY] = view;
@@ -359,9 +360,26 @@ public class BoardView : MonoBehaviour
         if (renderer != null && data != null)
         {
             renderer.sprite = data.sprite;
+            renderer.color = GetTileColor(data); // Apply color tinting
         }
 
         tileViews[x, y] = view;
+    }
+
+    private Color GetTileColor(TileData data)
+    {
+        if (data == null) return Color.white;
+        
+        // Fallback for transparent or plain white (uninitialized) tileColor values
+        if (data.tileColor.a < 0.05f || data.tileColor == Color.white)
+        {
+            string id = data.tileId.ToLower();
+            if (id.Contains("red")) return new Color(0.9f, 0.25f, 0.25f);
+            if (id.Contains("blue")) return new Color(0.25f, 0.55f, 0.9f);
+            if (id.Contains("green")) return new Color(0.25f, 0.75f, 0.35f);
+            if (id.Contains("yellow")) return new Color(0.9f, 0.8f, 0.15f);
+        }
+        return data.tileColor;
     }
 
     private Vector3 CellToWorld(int x, int y)

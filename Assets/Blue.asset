@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tileId: Blue
   sprite: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
+  tileColor: {r: 0.23529412, g: 0.5490196, b: 0.9019608, a: 1}
   specialType: 0
   baseScoreValue: 10
