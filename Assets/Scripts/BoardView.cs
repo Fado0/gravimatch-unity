@@ -27,7 +27,7 @@ public class BoardView : MonoBehaviour
 
     private GameObject[,] tileViews;
     private Vector2Int? firstSelected;
-    private TMPro.TextMeshPro worldHUDText;
+    private TextMesh worldHUDText;      // Uses built-in TextMesh to prevent missing TMP essential resource errors
     private GameObject bgParent;
 
     private void Start()
@@ -467,13 +467,14 @@ public class BoardView : MonoBehaviour
 
         // Place it directly to the right side of the board
         float hudX = boardOrigin.x + gameManager.boardWidth * cellSize + 0.6f;
-        float hudY = boardOrigin.y + gameManager.boardHeight * cellSize - 1.0f;
+        float hudY = boardOrigin.y + gameManager.boardHeight * cellSize - 0.2f;
         hudGo.transform.position = new Vector3(hudX, hudY, 0f);
 
-        worldHUDText = hudGo.AddComponent<TMPro.TextMeshPro>();
-        worldHUDText.fontSize = 5.2f;
-        worldHUDText.rectTransform.sizeDelta = new Vector2(6f, 8f);
-        worldHUDText.alignment = TMPro.TextAlignmentOptions.TopLeft;
+        worldHUDText = hudGo.AddComponent<TextMesh>();
+        worldHUDText.fontSize = 28;
+        worldHUDText.characterSize = 0.14f;
+        worldHUDText.alignment = TextAlignment.Left;
+        worldHUDText.anchor = TextAnchor.UpperLeft;
         worldHUDText.color = Color.white;
 
         // Hook game events to trigger HUD updates
@@ -495,7 +496,7 @@ public class BoardView : MonoBehaviour
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
         sb.AppendLine("<color=#FFBB33><b>GRAVIMATCH</b></color>");
         sb.AppendLine("───────────────");
-        sb.AppendLine($"<b>Moves Left:</b> <size=125%><color=#FFAA00>{gameManager.MovesLeft}</color></size>");
+        sb.AppendLine($"<b>Moves Left:</b> <color=#FFAA00>{gameManager.MovesLeft}</color>");
         sb.AppendLine($"<b>Gravity:</b> {gameManager.CurrentGravity.ToString().ToUpper()}");
         sb.AppendLine();
         sb.AppendLine("<b>Objectives:</b>");
@@ -509,7 +510,7 @@ public class BoardView : MonoBehaviour
                 int remaining = Mathf.Max(0, goal.targetCount - goal.currentCount);
                 if (remaining == 0)
                 {
-                    sb.AppendLine($"<color=#44FF44>✔ {name}: CLEARED!</color>");
+                    sb.AppendLine($"<color=#44FF44>✔ {name}: OK!</color>");
                 }
                 else
                 {
@@ -525,7 +526,7 @@ public class BoardView : MonoBehaviour
 
         sb.AppendLine();
         sb.AppendLine("───────────────");
-        sb.AppendLine("<size=65%><color=#888888>WASD / Arrows\nto Shift Gravity\n\nClick adjacent\ntiles to swap</color></size>");
+        sb.AppendLine("<color=#888888>WASD / Arrows\nto Shift Gravity\n\nClick adjacent\ntiles to swap</color>");
 
         worldHUDText.text = sb.ToString();
     }
