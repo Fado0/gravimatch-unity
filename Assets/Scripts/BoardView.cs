@@ -187,6 +187,7 @@ public class BoardView : MonoBehaviour
     private void HandleTilesSwapped(int x1, int y1, int x2, int y2)
     {
         if (AudioManager.Instance != null) AudioManager.Instance.PlaySwap();
+        UpdateWorldHUD(); // Instant moves update on swap trigger!
         StartCoroutine(AnimateSwap(x1, y1, x2, y2));
     }
 
@@ -548,18 +549,7 @@ public class BoardView : MonoBehaviour
         float centerY = boardOrigin.y + (gameManager.boardHeight - 1) * cellSize / 2f;
         Vector3 boardCenter = new Vector3(centerX, centerY, 0f);
 
-        // 1. Neon Blue Glow Halo
-        GameObject borderGo = new GameObject("BoardGlowOutline");
-        borderGo.transform.SetParent(bgParent.transform);
-        borderGo.transform.position = boardCenter;
-        borderGo.transform.localScale = new Vector3(gameManager.boardWidth * cellSize + 0.3f, gameManager.boardHeight * cellSize + 0.3f, 1f);
-        
-        SpriteRenderer borderSr = borderGo.AddComponent<SpriteRenderer>();
-        borderSr.sprite = backingSprite;
-        borderSr.color = new Color(0.12f, 0.45f, 0.85f, 0.45f); // Translucent blue glow
-        borderSr.sortingOrder = -4;
-
-        // 2. Solid Slate Base Plate
+        // 1. Clean, minimalist semi-transparent dark charcoal base (no heavy borders)
         GameObject boardBaseGo = new GameObject("BoardSlateBase");
         boardBaseGo.transform.SetParent(bgParent.transform);
         boardBaseGo.transform.position = boardCenter;
@@ -567,10 +557,10 @@ public class BoardView : MonoBehaviour
 
         SpriteRenderer baseSr = boardBaseGo.AddComponent<SpriteRenderer>();
         baseSr.sprite = backingSprite;
-        baseSr.color = new Color(0.06f, 0.08f, 0.12f, 0.95f); // Deep dark blue-gray plate
+        baseSr.color = new Color(0f, 0f, 0f, 0.55f); // Soft translucent dark shadow backing
         baseSr.sortingOrder = -3;
 
-        // 3. Individual Cell Inset Slots
+        // 2. Extremely subtle slot templates to differentiate cells
         for (int x = 0; x < gameManager.boardWidth; x++)
         {
             for (int y = 0; y < gameManager.boardHeight; y++)
@@ -578,11 +568,11 @@ public class BoardView : MonoBehaviour
                 GameObject slot = new GameObject($"SlotBackground_{x}_{y}");
                 slot.transform.SetParent(bgParent.transform);
                 slot.transform.position = CellToWorld(x, y);
-                slot.transform.localScale = Vector3.one * cellSize * 0.92f;
+                slot.transform.localScale = Vector3.one * cellSize * 0.94f;
 
                 SpriteRenderer sr = slot.AddComponent<SpriteRenderer>();
                 sr.sprite = backingSprite;
-                sr.color = new Color(0.02f, 0.03f, 0.05f, 0.75f); // Deep dark inset slot
+                sr.color = new Color(1f, 1f, 1f, 0.04f); // Ultra-light backing overlay
                 sr.sortingOrder = -2;
             }
         }
