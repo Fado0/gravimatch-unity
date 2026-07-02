@@ -29,6 +29,8 @@ public class BoardView : MonoBehaviour
     private Vector2Int? firstSelected;
     private TextMesh worldHUDText;      // Uses built-in TextMesh to prevent missing TMP essential resource errors
     private GameObject bgParent;
+    private GameObject gameOverOverlayGo;
+    private bool isGameEnded;
 
     private void Start()
     {
@@ -53,6 +55,7 @@ public class BoardView : MonoBehaviour
         gameManager.OnTilesSpawned += HandleTilesSpawned;
         gameManager.OnScoreChanged += HandleScoreChanged;
         gameManager.OnBoardReset += HandleBoardReset;
+        gameManager.OnGameEnded += HandleGameEnded;
     }
 
     private void OnDestroy()
@@ -65,6 +68,7 @@ public class BoardView : MonoBehaviour
         gameManager.OnTilesSpawned -= HandleTilesSpawned;
         gameManager.OnScoreChanged -= HandleScoreChanged;
         gameManager.OnBoardReset -= HandleBoardReset;
+        gameManager.OnGameEnded -= HandleGameEnded;
 
         if (worldHUDText != null)
         {
@@ -75,11 +79,18 @@ public class BoardView : MonoBehaviour
     }
 
     // ====================================================================
-    //  PLAYER INPUT (Mouse/Tap & Keyboard Gravity Shifting)
+    //  PLAYER INPUT (Mouse/Tap, Keyboard Gravity, and Restarts)
     // ====================================================================
     private void Update()
     {
-        if (gameManager.CurrentState != Match3GameManager.BoardState.Idle) return;
+        // Allow keyboard shortcut 'R' to restart when game ends or at any time
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            gameManager.RestartGame();
+            return;
+        }
+
+        if (gameManager.CurrentState != Match3GameManager.BoardState.Idle || isGameEnded) return;
 
         // 1. Keyboard Gravity Shift
         HandleKeyboardGravityInput();
@@ -368,6 +379,13 @@ public class BoardView : MonoBehaviour
 
     private void HandleBoardReset()
     {
+        isGameEnded = false;
+        if (gameOverOverlayGo != null)
+        {
+            Destroy(gameOverOverlayGo);
+            gameOverOverlayGo = null;
+        }
+
         if (tileViews != null)
         {
             for (int x = 0; x < gameManager.boardWidth; x++)
@@ -387,6 +405,89 @@ public class BoardView : MonoBehaviour
         tileViews = new GameObject[gameManager.boardWidth, gameManager.boardHeight];
         BuildInitialView();
         UpdateWorldHUD();
+    }
+
+    private void HandleGameEnded(bool won)
+    {
+        isGameEnded = true;
+
+        if (gameOverOverlayGo != null) Destroy(gameOverOverlayGo);
+
+        gameOverOverlayGo = new GameObject("GameOverOverlay");
+        gameOverOverlayGo.transform.SetParent(transform);
+
+        float centerX = boardOrigin.x + (gameManager.boardWidth - 1) * cellSize / 2f;
+        float centerY = boardOrigin.y + (gameManager.boardHeight - 1) * cellSize / 2f;
+        gameOverOverlayGo.transform.position = new Vector3(centerX, centerY, -5f); // Render in front
+
+        // Add a semi-transparent black backing panel to dim the board
+        GameObject panelGo = new GameObject("DimPanel");
+        panelGo.transform.SetParent(gameOverOverlayGo.transform);
+        panelGo.transform.localPosition = Vector3.zero;
+        panelGo.transform.localScale = new Vector3(gameManager.boardWidth * cellSize + 0.5f, gameManager.boardHeight * cellSize + 0.5f, 1f);
+
+        SpriteRenderer panelSr = panelGo.AddComponent<SpriteRenderer>();
+        if (gameManager.availableTileTypes != null && gameManager.availableTileTypes.Length > 0)
+        {
+            panelSr.sprite = gameManager.availableTileTypes[0].sprite;
+        }
+        panelSr.color = new Color(0f, 0f, 0f, 0.8f);
+        panelSr.sortingOrder = 8; // In front of tiles, behind end text
+
+        // Add the Victory/Defeat text
+        GameObject textGo = new GameObject("EndText");
+        textGo.transform.SetParent(gameOverOverlayGo.transform);
+        textGo.transform.localPosition = new Vector3(0f, 0.6f, 0f);
+
+        TextMesh textMesh = textGo.AddComponent<TextMesh>();
+        textMesh.text = won ? "VICTORY!" : "GAME OVER";
+        textMesh.fontSize = 44;
+        textMesh.characterSize = 0.16f;
+        textMesh.alignment = TextAlignment.Center;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.color = won ? new Color(0.2f, 0.9f, 0.3f) : new Color(0.95f, 0.2f, 0.2f);
+        
+        MeshRenderer mr = textGo.GetComponent<MeshRenderer>();
+        if (mr != null) mr.sortingOrder = 9;
+
+        // Add subtext instructions
+        GameObject subTextGo = new GameObject("EndSubText");
+        subTextGo.transform.SetParent(gameOverOverlayGo.transform);
+        subTextGo.transform.localPosition = new Vector3(0f, -0.6f, 0f);
+
+        TextMesh subTextMesh = subTextGo.AddComponent<TextMesh>();
+        subTextMesh.text = won 
+            ? "Objectives Cleared!\nPress 'R' to Play Again" 
+            : "Out of Moves!\nPress 'R' to Retry";
+        subTextMesh.fontSize = 24;
+        subTextMesh.characterSize = 0.11f;
+        subTextMesh.alignment = TextAlignment.Center;
+        subTextMesh.anchor = TextAnchor.MiddleCenter;
+        subTextMesh.color = Color.white;
+
+        MeshRenderer subMr = subTextGo.GetComponent<MeshRenderer>();
+        if (subMr != null) subMr.sortingOrder = 9;
+
+        // Trigger scale-punch animation
+        StartCoroutine(PunchOverlay(gameOverOverlayGo));
+    }
+
+    private IEnumerator PunchOverlay(GameObject overlay)
+    {
+        overlay.transform.localScale = Vector3.zero;
+        float duration = 0.3f;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            // Elastic pop curve
+            float scale = Mathf.Sin(t * Mathf.PI * 0.5f) * 1.05f;
+            if (t >= 0.9f) scale = Mathf.Lerp(1.05f, 1.0f, (t - 0.9f) / 0.1f);
+            overlay.transform.localScale = Vector3.one * scale;
+            yield return null;
+        }
+        overlay.transform.localScale = Vector3.one;
     }
 
     // ====================================================================
@@ -437,12 +538,39 @@ public class BoardView : MonoBehaviour
         bgParent = new GameObject("GridBackground");
         bgParent.transform.SetParent(transform);
 
-        Sprite slotSprite = null;
+        Sprite backingSprite = null;
         if (gameManager.availableTileTypes != null && gameManager.availableTileTypes.Length > 0)
         {
-            slotSprite = gameManager.availableTileTypes[0].sprite;
+            backingSprite = gameManager.availableTileTypes[0].sprite;
         }
 
+        float centerX = boardOrigin.x + (gameManager.boardWidth - 1) * cellSize / 2f;
+        float centerY = boardOrigin.y + (gameManager.boardHeight - 1) * cellSize / 2f;
+        Vector3 boardCenter = new Vector3(centerX, centerY, 0f);
+
+        // 1. Neon Blue Glow Halo
+        GameObject borderGo = new GameObject("BoardGlowOutline");
+        borderGo.transform.SetParent(bgParent.transform);
+        borderGo.transform.position = boardCenter;
+        borderGo.transform.localScale = new Vector3(gameManager.boardWidth * cellSize + 0.3f, gameManager.boardHeight * cellSize + 0.3f, 1f);
+        
+        SpriteRenderer borderSr = borderGo.AddComponent<SpriteRenderer>();
+        borderSr.sprite = backingSprite;
+        borderSr.color = new Color(0.12f, 0.45f, 0.85f, 0.45f); // Translucent blue glow
+        borderSr.sortingOrder = -4;
+
+        // 2. Solid Slate Base Plate
+        GameObject boardBaseGo = new GameObject("BoardSlateBase");
+        boardBaseGo.transform.SetParent(bgParent.transform);
+        boardBaseGo.transform.position = boardCenter;
+        boardBaseGo.transform.localScale = new Vector3(gameManager.boardWidth * cellSize + 0.15f, gameManager.boardHeight * cellSize + 0.15f, 1f);
+
+        SpriteRenderer baseSr = boardBaseGo.AddComponent<SpriteRenderer>();
+        baseSr.sprite = backingSprite;
+        baseSr.color = new Color(0.06f, 0.08f, 0.12f, 0.95f); // Deep dark blue-gray plate
+        baseSr.sortingOrder = -3;
+
+        // 3. Individual Cell Inset Slots
         for (int x = 0; x < gameManager.boardWidth; x++)
         {
             for (int y = 0; y < gameManager.boardHeight; y++)
@@ -450,11 +578,11 @@ public class BoardView : MonoBehaviour
                 GameObject slot = new GameObject($"SlotBackground_{x}_{y}");
                 slot.transform.SetParent(bgParent.transform);
                 slot.transform.position = CellToWorld(x, y);
-                slot.transform.localScale = Vector3.one * cellSize * 0.95f;
+                slot.transform.localScale = Vector3.one * cellSize * 0.92f;
 
                 SpriteRenderer sr = slot.AddComponent<SpriteRenderer>();
-                sr.sprite = slotSprite;
-                sr.color = new Color(0.08f, 0.08f, 0.08f, 0.4f); // Dark translucent backing
+                sr.sprite = backingSprite;
+                sr.color = new Color(0.02f, 0.03f, 0.05f, 0.75f); // Deep dark inset slot
                 sr.sortingOrder = -2;
             }
         }
@@ -526,7 +654,15 @@ public class BoardView : MonoBehaviour
 
         sb.AppendLine();
         sb.AppendLine("───────────────");
-        sb.AppendLine("<color=#888888>WASD / Arrows\nto Shift Gravity\n\nClick adjacent\ntiles to swap</color>");
+        sb.AppendLine("<color=#FFAA00><b>Rule:</b></color> <color=#BBBBBB>Match colors to</color>");
+        sb.AppendLine("<color=#BBBBBB>clear objectives.</color>");
+        sb.AppendLine("<color=#BBBBBB>If moves reach 0</color>");
+        sb.AppendLine("<color=#BBBBBB>before goals, you lose!</color>");
+        sb.AppendLine();
+        sb.AppendLine("───────────────");
+        sb.AppendLine("<color=#888888>WASD / Arrows to shift</color>");
+        sb.AppendLine("<color=#888888>Mouse to drag/swap</color>");
+        sb.AppendLine("<color=#888888>Press 'R' to Restart</color>");
 
         worldHUDText.text = sb.ToString();
     }
