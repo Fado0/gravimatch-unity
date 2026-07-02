@@ -428,10 +428,7 @@ public class BoardView : MonoBehaviour
         panelGo.transform.localScale = new Vector3(gameManager.boardWidth * cellSize + 0.5f, gameManager.boardHeight * cellSize + 0.5f, 1f);
 
         SpriteRenderer panelSr = panelGo.AddComponent<SpriteRenderer>();
-        if (gameManager.availableTileTypes != null && gameManager.availableTileTypes.Length > 0)
-        {
-            panelSr.sprite = gameManager.availableTileTypes[0].sprite;
-        }
+        panelSr.sprite = GetFlatSprite(); // Use crisp flat sprite to avoid stretching
         panelSr.color = new Color(0f, 0f, 0f, 0.8f);
         panelSr.sortingOrder = 8; // In front of tiles, behind end text
 
@@ -539,28 +536,25 @@ public class BoardView : MonoBehaviour
         bgParent = new GameObject("GridBackground");
         bgParent.transform.SetParent(transform);
 
-        Sprite backingSprite = null;
-        if (gameManager.availableTileTypes != null && gameManager.availableTileTypes.Length > 0)
-        {
-            backingSprite = gameManager.availableTileTypes[0].sprite;
-        }
+        // Generate a crisp, 1x1 white sprite to avoid stretching shaped tile sprites
+        Sprite bgSprite = GetFlatSprite();
 
         float centerX = boardOrigin.x + (gameManager.boardWidth - 1) * cellSize / 2f;
         float centerY = boardOrigin.y + (gameManager.boardHeight - 1) * cellSize / 2f;
         Vector3 boardCenter = new Vector3(centerX, centerY, 0f);
 
-        // 1. Clean, minimalist semi-transparent dark charcoal base (no heavy borders)
+        // 1. Clean, minimalist semi-transparent dark charcoal base
         GameObject boardBaseGo = new GameObject("BoardSlateBase");
         boardBaseGo.transform.SetParent(bgParent.transform);
         boardBaseGo.transform.position = boardCenter;
         boardBaseGo.transform.localScale = new Vector3(gameManager.boardWidth * cellSize + 0.15f, gameManager.boardHeight * cellSize + 0.15f, 1f);
 
         SpriteRenderer baseSr = boardBaseGo.AddComponent<SpriteRenderer>();
-        baseSr.sprite = backingSprite;
-        baseSr.color = new Color(0f, 0f, 0f, 0.55f); // Soft translucent dark shadow backing
+        baseSr.sprite = bgSprite;
+        baseSr.color = new Color(0.04f, 0.05f, 0.07f, 0.85f); // Deep dark slate backing
         baseSr.sortingOrder = -3;
 
-        // 2. Extremely subtle slot templates to differentiate cells
+        // 2. Subtle inset slot templates to differentiate cells
         for (int x = 0; x < gameManager.boardWidth; x++)
         {
             for (int y = 0; y < gameManager.boardHeight; y++)
@@ -571,8 +565,8 @@ public class BoardView : MonoBehaviour
                 slot.transform.localScale = Vector3.one * cellSize * 0.94f;
 
                 SpriteRenderer sr = slot.AddComponent<SpriteRenderer>();
-                sr.sprite = backingSprite;
-                sr.color = new Color(1f, 1f, 1f, 0.04f); // Ultra-light backing overlay
+                sr.sprite = bgSprite;
+                sr.color = new Color(0.01f, 0.02f, 0.03f, 0.7f); // Deep dark inset slot
                 sr.sortingOrder = -2;
             }
         }
@@ -671,6 +665,14 @@ public class BoardView : MonoBehaviour
             if (id.Contains("yellow")) return new Color(0.9f, 0.8f, 0.15f);
         }
         return data.tileColor;
+    }
+
+    private Sprite GetFlatSprite()
+    {
+        Texture2D tex = new Texture2D(1, 1);
+        tex.SetPixel(0, 0, Color.white);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
     }
 
     private Vector3 CellToWorld(int x, int y)

@@ -32,6 +32,7 @@ public class GameHUD : MonoBehaviour
 
         if (gameManager != null)
         {
+            gameManager.OnTilesSwapped += HandleTilesSwapped;
             gameManager.OnScoreChanged += HandleScoreChanged;
             gameManager.OnGoalsUpdated += HandleGoalsUpdated;
             gameManager.OnGravityDirectionChanged += HandleGravityChanged;
@@ -57,6 +58,7 @@ public class GameHUD : MonoBehaviour
     {
         if (gameManager != null)
         {
+            gameManager.OnTilesSwapped -= HandleTilesSwapped;
             gameManager.OnScoreChanged -= HandleScoreChanged;
             gameManager.OnGoalsUpdated -= HandleGoalsUpdated;
             gameManager.OnGravityDirectionChanged -= HandleGravityChanged;
@@ -146,6 +148,11 @@ public class GameHUD : MonoBehaviour
             endPanel.SetActive(false);
         }
         RefreshAllDisplays();
+    }
+
+    private void HandleTilesSwapped(int x1, int y1, int x2, int y2)
+    {
+        UpdateMovesDisplay();
     }
 
     private void OnRestartPressed()
