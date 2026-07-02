@@ -43,6 +43,7 @@ public class TileVFX : MonoBehaviour
         vfxObject.transform.position = position;
 
         ParticleSystem ps = vfxObject.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         ParticleSystemRenderer renderer = vfxObject.GetComponent<ParticleSystemRenderer>();
 
         // Set rendering material to use a simple sprite shader to allow flat color rendering
