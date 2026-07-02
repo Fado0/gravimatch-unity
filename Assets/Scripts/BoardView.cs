@@ -6,6 +6,7 @@ using UnityEngine;
 /// Presentation layer for the match-3 board. Renders tiles, handles mouse inputs
 /// (selection & swaps) and keyboard gravity inputs, triggers board shake,
 /// manages smooth movement animations, and spawns particle VFX.
+/// Spawns its own dark grid background slots and a dynamic world-space HUD.
 /// </summary>
 public class BoardView : MonoBehaviour
 {
@@ -20,8 +21,14 @@ public class BoardView : MonoBehaviour
     public float matchPunchSeconds = 0.18f;
     public float matchPunchScale = 1.3f;
 
+    [Header("Visual Layout")]
+    [Tooltip("Enlarges the tile local scale factor (1.0 = normal size)")]
+    public float tileScale = 1.15f;
+
     private GameObject[,] tileViews;
     private Vector2Int? firstSelected;
+    private TMPro.TextMeshPro worldHUDText;
+    private GameObject bgParent;
 
     private void Start()
     {
@@ -32,7 +39,11 @@ public class BoardView : MonoBehaviour
         }
 
         tileViews = new GameObject[gameManager.boardWidth, gameManager.boardHeight];
+        
+        // Spawn layout styling
+        SpawnGridBackground();
         BuildInitialView();
+        CreateWorldSpaceHUD();
 
         // Subscribe to GameManager's events
         gameManager.OnTilesSwapped += HandleTilesSwapped;
@@ -54,6 +65,13 @@ public class BoardView : MonoBehaviour
         gameManager.OnTilesSpawned -= HandleTilesSpawned;
         gameManager.OnScoreChanged -= HandleScoreChanged;
         gameManager.OnBoardReset -= HandleBoardReset;
+
+        if (worldHUDText != null)
+        {
+            gameManager.OnScoreChanged -= UpdateWorldHUD;
+            gameManager.OnGoalsUpdated -= UpdateWorldHUD;
+            gameManager.OnGravityDirectionChanged -= UpdateWorldHUD;
+        }
     }
 
     // ====================================================================
@@ -149,7 +167,7 @@ public class BoardView : MonoBehaviour
     {
         GameObject view = tileViews[cell.x, cell.y];
         if (view == null) return;
-        view.transform.localScale = on ? Vector3.one * 1.15f : Vector3.one;
+        view.transform.localScale = Vector3.one * tileScale * (on ? 1.15f : 1f);
     }
 
     // ====================================================================
@@ -258,7 +276,7 @@ public class BoardView : MonoBehaviour
             TileVFX.Instance.SpawnBurst(view.transform.position, data.tileColor);
         }
 
-        Vector3 baseScale = Vector3.one;
+        Vector3 baseScale = Vector3.one * tileScale;
         float t = 0f;
         while (t < matchPunchSeconds)
         {
@@ -322,7 +340,8 @@ public class BoardView : MonoBehaviour
     {
         string tileId = spawn.TileId;
         GameObject view = Instantiate(tilePrefab, CellToWorld(spawn.SpawnX, spawn.SpawnY), Quaternion.identity, transform);
-        
+        view.transform.localScale = Vector3.one * tileScale;
+
         TileData data = gameManager.GetTileDataById(tileId);
         SpriteRenderer renderer = view.GetComponent<SpriteRenderer>();
         if (renderer != null && data != null)
@@ -367,6 +386,7 @@ public class BoardView : MonoBehaviour
         firstSelected = null;
         tileViews = new GameObject[gameManager.boardWidth, gameManager.boardHeight];
         BuildInitialView();
+        UpdateWorldHUD();
     }
 
     // ====================================================================
@@ -398,6 +418,8 @@ public class BoardView : MonoBehaviour
         if (tileId == null) return;
 
         GameObject view = Instantiate(tilePrefab, CellToWorld(x, y), Quaternion.identity, transform);
+        view.transform.localScale = Vector3.one * tileScale;
+
         TileData data = gameManager.GetTileDataById(tileId);
         SpriteRenderer renderer = view.GetComponent<SpriteRenderer>();
         if (renderer != null && data != null)
@@ -407,6 +429,105 @@ public class BoardView : MonoBehaviour
         }
 
         tileViews[x, y] = view;
+    }
+
+    private void SpawnGridBackground()
+    {
+        if (bgParent != null) Destroy(bgParent);
+        bgParent = new GameObject("GridBackground");
+        bgParent.transform.SetParent(transform);
+
+        Sprite slotSprite = null;
+        if (gameManager.availableTileTypes != null && gameManager.availableTileTypes.Length > 0)
+        {
+            slotSprite = gameManager.availableTileTypes[0].sprite;
+        }
+
+        for (int x = 0; x < gameManager.boardWidth; x++)
+        {
+            for (int y = 0; y < gameManager.boardHeight; y++)
+            {
+                GameObject slot = new GameObject($"SlotBackground_{x}_{y}");
+                slot.transform.SetParent(bgParent.transform);
+                slot.transform.position = CellToWorld(x, y);
+                slot.transform.localScale = Vector3.one * cellSize * 0.95f;
+
+                SpriteRenderer sr = slot.AddComponent<SpriteRenderer>();
+                sr.sprite = slotSprite;
+                sr.color = new Color(0.08f, 0.08f, 0.08f, 0.4f); // Dark translucent backing
+                sr.sortingOrder = -2;
+            }
+        }
+    }
+
+    private void CreateWorldSpaceHUD()
+    {
+        GameObject hudGo = new GameObject("WorldSpaceHUD");
+        hudGo.transform.SetParent(transform);
+
+        // Place it directly to the right side of the board
+        float hudX = boardOrigin.x + gameManager.boardWidth * cellSize + 0.6f;
+        float hudY = boardOrigin.y + gameManager.boardHeight * cellSize - 1.0f;
+        hudGo.transform.position = new Vector3(hudX, hudY, 0f);
+
+        worldHUDText = hudGo.AddComponent<TMPro.TextMeshPro>();
+        worldHUDText.fontSize = 5.2f;
+        worldHUDText.rectTransform.sizeDelta = new Vector2(6f, 8f);
+        worldHUDText.alignment = TMPro.TextAlignmentOptions.TopLeft;
+        worldHUDText.color = Color.white;
+
+        // Hook game events to trigger HUD updates
+        gameManager.OnScoreChanged += UpdateWorldHUD;
+        gameManager.OnGoalsUpdated += UpdateWorldHUD;
+        gameManager.OnGravityDirectionChanged += UpdateWorldHUD;
+
+        UpdateWorldHUD();
+    }
+
+    private void UpdateWorldHUD(int dummy) => UpdateWorldHUD();
+    private void UpdateWorldHUD(GravityDirection dummy) => UpdateWorldHUD();
+    private void UpdateWorldHUD(List<TileGoal> dummy) => UpdateWorldHUD();
+
+    private void UpdateWorldHUD()
+    {
+        if (worldHUDText == null || gameManager == null) return;
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine("<color=#FFBB33><b>GRAVIMATCH</b></color>");
+        sb.AppendLine("───────────────");
+        sb.AppendLine($"<b>Moves Left:</b> <size=125%><color=#FFAA00>{gameManager.MovesLeft}</color></size>");
+        sb.AppendLine($"<b>Gravity:</b> {gameManager.CurrentGravity.ToString().ToUpper()}");
+        sb.AppendLine();
+        sb.AppendLine("<b>Objectives:</b>");
+
+        if (gameManager.levelGoals != null && gameManager.levelGoals.Count > 0)
+        {
+            foreach (var goal in gameManager.levelGoals)
+            {
+                if (goal.tileType == null) continue;
+                string name = goal.tileType.tileId.ToUpper();
+                int remaining = Mathf.Max(0, goal.targetCount - goal.currentCount);
+                if (remaining == 0)
+                {
+                    sb.AppendLine($"<color=#44FF44>✔ {name}: CLEARED!</color>");
+                }
+                else
+                {
+                    string hexColor = ColorUtility.ToHtmlStringRGBA(GetTileColor(goal.tileType));
+                    sb.AppendLine($"• <color=#{hexColor}>■ {name}</color>: {goal.currentCount}/{goal.targetCount}");
+                }
+            }
+        }
+        else
+        {
+            sb.AppendLine("No Active Goals");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("───────────────");
+        sb.AppendLine("<size=65%><color=#888888>WASD / Arrows\nto Shift Gravity\n\nClick adjacent\ntiles to swap</color></size>");
+
+        worldHUDText.text = sb.ToString();
     }
 
     private Color GetTileColor(TileData data)

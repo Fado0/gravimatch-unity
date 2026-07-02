@@ -71,6 +71,28 @@ public class Match3GameManager : MonoBehaviour
         board = new BoardModel(boardWidth, boardHeight);
         CurrentGravity = GravityDirection.Down;
         MovesLeft = maxMoves;
+
+        // Auto-initialize default level objectives if none are set in the inspector
+        if (levelGoals == null || levelGoals.Count == 0)
+        {
+            levelGoals = new List<TileGoal>();
+            if (availableTileTypes != null)
+            {
+                foreach (var tileType in availableTileTypes)
+                {
+                    if (levelGoals.Count < 3 && tileType != null)
+                    {
+                        levelGoals.Add(new TileGoal
+                        {
+                            tileType = tileType,
+                            targetCount = 15,
+                            currentCount = 0
+                        });
+                    }
+                }
+            }
+        }
+
         PopulateInitialBoard();
     }
 
