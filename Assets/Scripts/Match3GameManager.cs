@@ -42,6 +42,7 @@ public class Match3GameManager : MonoBehaviour
     // Events: Presentation and UI layers subscribe to these rather than
     // GameManager calling rendering/audio methods directly.
     public event System.Action<int, int, int, int> OnTilesSwapped;
+    public event System.Action<int, int, int, int> OnTilesSwapFailed;
     public event System.Action<List<List<BoardCoord>>> OnMatchesFound;
     public event System.Action<List<TileMove>> OnGravityApplied;
     public event System.Action<List<TileSpawnMove>> OnTilesSpawned;
@@ -134,17 +135,32 @@ public class Match3GameManager : MonoBehaviour
         var matchesAfterSwap = MatchResolver.FindMatches(board);
         if (matchesAfterSwap.Count == 0)
         {
-            // Invalid swap (no match) -> revert swap
+            // Invalid swap (no match) -> revert swap in model and notify view
             board.SwapTiles(x1, y1, x2, y2);
-            isProcessingSwap = false;
-            SetState(BoardState.Idle);
+            OnTilesSwapFailed?.Invoke(x1, y1, x2, y2);
+            StartCoroutine(RevertSwapStateRoutine());
             return;
         }
 
         // Valid move
         MovesLeft--;
         OnTilesSwapped?.Invoke(x1, y1, x2, y2);
+        StartCoroutine(CompleteSwapAndResolveRoutine());
+    }
+
+    private IEnumerator CompleteSwapAndResolveRoutine()
+    {
+        // Wait for visual swap animation to finish before triggering matches
+        yield return new WaitForSeconds(swapAnimDuration);
         SetState(BoardState.Resolving);
+    }
+
+    private IEnumerator RevertSwapStateRoutine()
+    {
+        // Wait for double swap animation (swap + swap-back duration)
+        yield return new WaitForSeconds(swapAnimDuration * 2.1f);
+        isProcessingSwap = false;
+        SetState(BoardState.Idle);
     }
 
     /// <summary>
@@ -169,7 +185,14 @@ public class Match3GameManager : MonoBehaviour
 
         if (AudioManager.Instance != null) AudioManager.Instance.PlayGravityShift();
 
-        SetState(BoardState.Resolving);
+        // Wait for clear punch animation to complete before sliding (refilling)
+        StartCoroutine(CompleteGravityShiftRoutine());
+    }
+
+    private IEnumerator CompleteGravityShiftRoutine()
+    {
+        yield return new WaitForSeconds(resolveStepDelay * 1.1f);
+        SetState(BoardState.Refilling); // Go directly to refilling to slide and spawn!
     }
 
     public void RestartGame()

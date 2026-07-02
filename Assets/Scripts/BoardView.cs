@@ -36,6 +36,7 @@ public class BoardView : MonoBehaviour
 
         // Subscribe to GameManager's events
         gameManager.OnTilesSwapped += HandleTilesSwapped;
+        gameManager.OnTilesSwapFailed += HandleTilesSwapFailed;
         gameManager.OnMatchesFound += HandleMatchesFound;
         gameManager.OnGravityApplied += HandleGravityApplied;
         gameManager.OnTilesSpawned += HandleTilesSpawned;
@@ -47,6 +48,7 @@ public class BoardView : MonoBehaviour
     {
         if (gameManager == null) return;
         gameManager.OnTilesSwapped -= HandleTilesSwapped;
+        gameManager.OnTilesSwapFailed -= HandleTilesSwapFailed;
         gameManager.OnMatchesFound -= HandleMatchesFound;
         gameManager.OnGravityApplied -= HandleGravityApplied;
         gameManager.OnTilesSpawned -= HandleTilesSpawned;
@@ -165,6 +167,10 @@ public class BoardView : MonoBehaviour
         GameObject b = tileViews[x2, y2];
         if (a == null || b == null) yield break;
 
+        // Swap instantly so visual matches target the correct objects during resolutions
+        tileViews[x1, y1] = b;
+        tileViews[x2, y2] = a;
+
         Vector3 posA = a.transform.position;
         Vector3 posB = b.transform.position;
         float t = 0f;
@@ -180,9 +186,46 @@ public class BoardView : MonoBehaviour
 
         a.transform.position = posB;
         b.transform.position = posA;
+    }
 
-        tileViews[x1, y1] = b;
-        tileViews[x2, y2] = a;
+    private void HandleTilesSwapFailed(int x1, int y1, int x2, int y2)
+    {
+        StartCoroutine(AnimateFailedSwap(x1, y1, x2, y2));
+    }
+
+    private IEnumerator AnimateFailedSwap(int x1, int y1, int x2, int y2)
+    {
+        GameObject a = tileViews[x1, y1];
+        GameObject b = tileViews[x2, y2];
+        if (a == null || b == null) yield break;
+
+        Vector3 posA = a.transform.position;
+        Vector3 posB = b.transform.position;
+        float t = 0f;
+
+        // Slide towards each other
+        while (t < swapAnimSeconds)
+        {
+            t += Time.deltaTime;
+            float frac = t / swapAnimSeconds;
+            a.transform.position = Vector3.Lerp(posA, posB, frac);
+            b.transform.position = Vector3.Lerp(posB, posA, frac);
+            yield return null;
+        }
+
+        // Slide back
+        t = 0f;
+        while (t < swapAnimSeconds)
+        {
+            t += Time.deltaTime;
+            float frac = t / swapAnimSeconds;
+            a.transform.position = Vector3.Lerp(posB, posA, frac);
+            b.transform.position = Vector3.Lerp(posA, posB, frac);
+            yield return null;
+        }
+
+        a.transform.position = posA;
+        b.transform.position = posB;
     }
 
     private void HandleMatchesFound(List<List<BoardCoord>> matches)
