@@ -3,22 +3,46 @@ using UnityEngine;
 
 /// <summary>
 /// A screen/board shaking component to give visual impact and feedback during major events.
-/// Implemented as a Singleton helper for simplicity.
+/// Supports lazy-initialization to automatically find and hook onto the Main Camera at runtime.
 /// </summary>
 public class BoardShake : MonoBehaviour
 {
-    public static BoardShake Instance { get; private set; }
+    private static BoardShake instance;
+    public static BoardShake Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                Camera mainCam = Camera.main;
+                if (mainCam != null)
+                {
+                    instance = mainCam.gameObject.AddComponent<BoardShake>();
+                }
+                else
+                {
+                    GameObject go = new GameObject("BoardShake");
+                    instance = go.AddComponent<BoardShake>();
+                }
+            }
+            return instance;
+        }
+    }
 
     private Vector3 originalLocalPos;
     private Coroutine shakeCoroutine;
 
     private void Awake()
     {
-        if (Instance == null)
+        if (instance == null)
         {
-            Instance = this;
+            instance = this;
+            originalLocalPos = transform.localPosition;
         }
-        originalLocalPos = transform.localPosition;
+        else if (instance != this)
+        {
+            Destroy(gameObject);
+        }
     }
 
     /// <summary>

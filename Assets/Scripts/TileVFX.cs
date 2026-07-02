@@ -3,16 +3,34 @@ using UnityEngine;
 /// <summary>
 /// A procedural VFX system that creates particle bursts without needing prefabs.
 /// Spawns particle bursts tinted to match the color of the cleared tiles.
+/// Supports lazy-initialization to work without prior scene configuration.
 /// </summary>
 public class TileVFX : MonoBehaviour
 {
-    public static TileVFX Instance { get; private set; }
+    private static TileVFX instance;
+    public static TileVFX Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                GameObject go = new GameObject("TileVFX");
+                instance = go.AddComponent<TileVFX>();
+            }
+            return instance;
+        }
+    }
 
     private void Awake()
     {
-        if (Instance == null)
+        if (instance == null)
         {
-            Instance = this;
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (instance != this)
+        {
+            Destroy(gameObject);
         }
     }
 

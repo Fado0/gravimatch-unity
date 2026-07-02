@@ -3,11 +3,24 @@ using UnityEngine;
 /// <summary>
 /// A simple, self-contained Singleton AudioManager that generates and caches
 /// procedural audio clips on start, and plays them when requested by game systems.
+/// Supports lazy-initialization to work without prior scene configuration.
 /// </summary>
 [RequireComponent(typeof(AudioSource))]
 public class AudioManager : MonoBehaviour
 {
-    public static AudioManager Instance { get; private set; }
+    private static AudioManager instance;
+    public static AudioManager Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                GameObject go = new GameObject("AudioManager");
+                instance = go.AddComponent<AudioManager>();
+            }
+            return instance;
+        }
+    }
 
     private AudioSource audioSource;
 
@@ -20,24 +33,30 @@ public class AudioManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
+        if (instance == null)
         {
-            Instance = this;
+            instance = this;
             DontDestroyOnLoad(gameObject);
-            audioSource = GetComponent<AudioSource>();
-
-            // Generate and cache SFX clips procedurally
-            selectClip = ProceduralAudioSynth.CreateBeep();
-            swapClip = ProceduralAudioSynth.CreateSlide();
-            matchClip = ProceduralAudioSynth.CreateChime();
-            gravityClip = ProceduralAudioSynth.CreateRumble();
-            victoryClip = ProceduralAudioSynth.CreateFanfare();
-            defeatClip = ProceduralAudioSynth.CreateSadTune();
         }
-        else
+        else if (instance != this)
         {
             Destroy(gameObject);
+            return;
         }
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        // Generate and cache SFX clips procedurally
+        selectClip = ProceduralAudioSynth.CreateBeep();
+        swapClip = ProceduralAudioSynth.CreateSlide();
+        matchClip = ProceduralAudioSynth.CreateChime();
+        gravityClip = ProceduralAudioSynth.CreateRumble();
+        victoryClip = ProceduralAudioSynth.CreateFanfare();
+        defeatClip = ProceduralAudioSynth.CreateSadTune();
     }
 
     public void PlaySelect() => Play(selectClip);
