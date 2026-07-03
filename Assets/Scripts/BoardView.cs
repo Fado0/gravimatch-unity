@@ -27,7 +27,8 @@ public class BoardView : MonoBehaviour
 
     private GameObject[,] tileViews;
     private Vector2Int? firstSelected;
-    private TextMesh worldHUDText;      // Uses built-in TextMesh to prevent missing TMP essential resource errors
+    private TextMesh worldHUDText;
+    private TextMesh worldInstructionsText; // Separate text mesh for smaller helper instructions
     private GameObject bgParent;
     private GameObject gameOverOverlayGo;
     private bool isGameEnded;
@@ -590,6 +591,29 @@ public class BoardView : MonoBehaviour
         worldHUDText.anchor = TextAnchor.UpperLeft;
         worldHUDText.color = Color.white;
 
+        // Create a secondary TextMesh for instructions with a smaller, cleaner font size to fit the screen
+        GameObject instGo = new GameObject("WorldSpaceInstructions");
+        instGo.transform.SetParent(transform);
+        instGo.transform.position = new Vector3(hudX, hudY - 3.2f, 0f);
+
+        worldInstructionsText = instGo.AddComponent<TextMesh>();
+        worldInstructionsText.fontSize = 22;
+        worldInstructionsText.characterSize = 0.09f; // Smaller text size
+        worldInstructionsText.alignment = TextAlignment.Left;
+        worldInstructionsText.anchor = TextAnchor.UpperLeft;
+        worldInstructionsText.color = Color.white;
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine("───────────────");
+        sb.AppendLine("<color=#FFAA00><b>Rule:</b></color> <color=#BBBBBB>Match colors to clear</color>");
+        sb.AppendLine("<color=#BBBBBB>objectives before Moves reach 0.</color>");
+        sb.AppendLine();
+        sb.AppendLine("<color=#FFAA00><b>Controls:</b></color>");
+        sb.AppendLine("<color=#888888>• Drag/click adjacent to Swap</color>");
+        sb.AppendLine("<color=#888888>• WASD/Arrows to Shift Gravity</color>");
+        sb.AppendLine("<color=#888888>• Press 'R' to Restart/Retry</color>");
+        worldInstructionsText.text = sb.ToString();
+
         // Hook game events to trigger HUD updates
         gameManager.OnScoreChanged += UpdateWorldHUD;
         gameManager.OnGoalsUpdated += UpdateWorldHUD;
@@ -636,18 +660,6 @@ public class BoardView : MonoBehaviour
         {
             sb.AppendLine("No Active Goals");
         }
-
-        sb.AppendLine();
-        sb.AppendLine("───────────────");
-        sb.AppendLine("<color=#FFAA00><b>Rule:</b></color> <color=#BBBBBB>Match colors to</color>");
-        sb.AppendLine("<color=#BBBBBB>clear objectives.</color>");
-        sb.AppendLine("<color=#BBBBBB>If moves reach 0</color>");
-        sb.AppendLine("<color=#BBBBBB>before goals, you lose!</color>");
-        sb.AppendLine();
-        sb.AppendLine("───────────────");
-        sb.AppendLine("<color=#888888>WASD / Arrows to shift</color>");
-        sb.AppendLine("<color=#888888>Mouse to drag/swap</color>");
-        sb.AppendLine("<color=#888888>Press 'R' to Restart</color>");
 
         worldHUDText.text = sb.ToString();
     }
