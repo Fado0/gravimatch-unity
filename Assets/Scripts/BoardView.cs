@@ -220,6 +220,7 @@ public class BoardView : MonoBehaviour
 
     private void HandleTilesSwapFailed(int x1, int y1, int x2, int y2)
     {
+        UpdateWorldHUD(); // Instant moves update on swap failed trigger!
         StartCoroutine(AnimateFailedSwap(x1, y1, x2, y2));
     }
 

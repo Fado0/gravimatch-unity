@@ -159,6 +159,10 @@ public class Match3GameManager : MonoBehaviour
         {
             // Invalid swap (no match) -> revert swap in model and notify view
             board.SwapTiles(x1, y1, x2, y2);
+            
+            // Penalize wrong move: cost 1 move!
+            MovesLeft--;
+            
             OnTilesSwapFailed?.Invoke(x1, y1, x2, y2);
             StartCoroutine(RevertSwapStateRoutine());
             return;
@@ -182,7 +186,7 @@ public class Match3GameManager : MonoBehaviour
         // Wait for double swap animation (swap + swap-back duration)
         yield return new WaitForSeconds(swapAnimDuration * 2.1f);
         isProcessingSwap = false;
-        SetState(BoardState.Idle);
+        SetState(BoardState.CheckEnd); // Check if we ran out of moves!
     }
 
     /// <summary>
