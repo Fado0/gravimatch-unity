@@ -599,8 +599,8 @@ public class BoardView : MonoBehaviour
         hudGo.transform.position = new Vector3(hudX, hudY, 0f);
 
         worldHUDText = hudGo.AddComponent<TextMesh>();
-        worldHUDText.fontSize = 28;
-        worldHUDText.characterSize = 0.11f; 
+        worldHUDText.fontSize = 120; // High-density font atlas for razor-sharp text quality
+        worldHUDText.characterSize = 0.025f; // Proportional scale down to fit the screen
         worldHUDText.alignment = TextAlignment.Left;
         worldHUDText.anchor = TextAnchor.UpperLeft;
         worldHUDText.color = Color.white;
