@@ -1,25 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
 
-/// <summary>
-/// Finds matches on a BoardModel. Kept as its own static class, separate from
-/// both BoardModel (data) and Match3GameManager (flow control), so the match
-/// RULES can change -- e.g. supporting L-shapes or 5-in-a-row bonuses later --
-/// without touching the board representation or the state machine that drives
-/// turns. This is the same separation-of-concerns instinct behind keeping
-/// CharacterData (data) separate from GameManager (flow) in Last Decision,
-/// just applied one layer further: here, even the "rules" logic is its own
-/// independent piece that can be swapped or unit-tested without involving the
-/// other two.
-/// </summary>
+
 public static class MatchResolver
 {
     private const int MinMatchLength = 3;
 
-    /// <summary>
-    /// Returns every set of 3+ same-tileId cells in a straight horizontal or
-    /// vertical run. Each returned list is one match group.
-    /// </summary>
+ 
     public static List<List<BoardCoord>> FindMatches(BoardModel board)
     {
         var matches = new List<List<BoardCoord>>();
@@ -76,12 +63,7 @@ public static class MatchResolver
         return horizontal ? new BoardCoord(inner, outer) : new BoardCoord(outer, inner);
     }
 
-    /// <summary>
-    /// A tile can belong to both a horizontal and vertical run in the same
-    /// resolve pass (an L or T shape). We merge any matches that share at
-    /// least one coordinate so they resolve, animate, and score as one group
-    /// instead of double-counting the shared tile.
-    /// </summary>
+    
     private static List<List<BoardCoord>> MergeOverlappingMatches(List<List<BoardCoord>> matches)
     {
         var merged = new List<HashSet<BoardCoord>>();

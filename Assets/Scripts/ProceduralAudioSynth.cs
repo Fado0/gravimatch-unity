@@ -1,17 +1,11 @@
 using UnityEngine;
 
-/// <summary>
-/// A utility class that procedurally synthesizes retro-style sound effects
-/// directly in memory. This removes the need for importing external wav/mp3 assets
-/// and ensures a completely self-contained Unity package.
-/// </summary>
+
 public static class ProceduralAudioSynth
 {
     private const int SampleRate = 44100;
 
-    /// <summary>
-    /// Creates a short high-frequency beep for tile selections.
-    /// </summary>
+    
     public static AudioClip CreateBeep(float frequency = 880f, float duration = 0.05f)
     {
         int sampleCount = (int)(SampleRate * duration);
@@ -19,7 +13,7 @@ public static class ProceduralAudioSynth
         for (int i = 0; i < sampleCount; i++)
         {
             float t = (float)i / SampleRate;
-            float envelope = 1f - (t / duration); // Simple decay
+            float envelope = 1f - (t / duration); 
             samples[i] = Mathf.Sin(2f * Mathf.PI * frequency * t) * envelope * 0.15f;
         }
 
@@ -28,9 +22,7 @@ public static class ProceduralAudioSynth
         return clip;
     }
 
-    /// <summary>
-    /// Creates a quick descending frequency sweep for tile swaps.
-    /// </summary>
+  
     public static AudioClip CreateSlide(float startFreq = 440f, float endFreq = 220f, float duration = 0.12f)
     {
         int sampleCount = (int)(SampleRate * duration);
@@ -39,7 +31,7 @@ public static class ProceduralAudioSynth
         {
             float t = (float)i / SampleRate;
             float envelope = 1f - (t / duration);
-            // Linear frequency sweep phase integration
+            
             float phase = 2f * Mathf.PI * (startFreq * t + (endFreq - startFreq) * t * t / (2f * duration));
             samples[i] = Mathf.Sin(phase) * envelope * 0.2f;
         }
@@ -49,9 +41,7 @@ public static class ProceduralAudioSynth
         return clip;
     }
 
-    /// <summary>
-    /// Creates a rapid major-chord arpeggio (C5 -> E5 -> G5 -> C6) for tile matches.
-    /// </summary>
+   
     public static AudioClip CreateChime()
     {
         float duration = 0.35f;
@@ -65,7 +55,7 @@ public static class ProceduralAudioSynth
         {
             float t = (float)i / SampleRate;
             
-            // Determine active note
+           
             int noteIndex = Mathf.Clamp((int)(t / noteDuration), 0, notes.Length - 1);
             float freq = notes[noteIndex];
             
@@ -81,9 +71,7 @@ public static class ProceduralAudioSynth
         return clip;
     }
 
-    /// <summary>
-    /// Creates a low-frequency rumble sweep with sub-harmonics for gravity shifts.
-    /// </summary>
+   
     public static AudioClip CreateRumble()
     {
         float duration = 0.45f;
@@ -92,10 +80,10 @@ public static class ProceduralAudioSynth
         for (int i = 0; i < sampleCount; i++)
         {
             float t = (float)i / SampleRate;
-            float envelope = Mathf.Sin(t / duration * Mathf.PI); // Bell curve
-            // Low freq sweep: 150Hz to 70Hz
+            float envelope = Mathf.Sin(t / duration * Mathf.PI);
+            
             float phase = 2f * Mathf.PI * (150f * t + (70f - 150f) * t * t / (2f * duration));
-            // Add subharmonic texture
+            
             samples[i] = (Mathf.Sin(phase) + 0.35f * Mathf.Sin(phase * 2f)) * envelope * 0.25f;
         }
 
@@ -104,9 +92,7 @@ public static class ProceduralAudioSynth
         return clip;
     }
 
-    /// <summary>
-    /// Creates an upbeat, multi-note major arpeggio progression for victory.
-    /// </summary>
+    
     public static AudioClip CreateFanfare()
     {
         float duration = 1.2f;
@@ -141,9 +127,7 @@ public static class ProceduralAudioSynth
         return clip;
     }
 
-    /// <summary>
-    /// Creates a descending, somber minor chord progression for defeat.
-    /// </summary>
+    
     public static AudioClip CreateSadTune()
     {
         float duration = 1.4f;

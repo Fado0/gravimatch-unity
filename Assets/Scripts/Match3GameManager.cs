@@ -2,9 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Holds level objective goals for collecting tile types.
-/// </summary>
+
 [System.Serializable]
 public class TileGoal
 {
@@ -13,11 +11,7 @@ public class TileGoal
     public int currentCount;
 }
 
-/// <summary>
-/// Turn-flow controller for the match-3 board. Orchestrates state transitions,
-/// user moves, active gravity shifts, score tracking, level objective checking,
-/// and victory/defeat rules. Decoupled from visuals and audio through C# events.
-/// </summary>
+
 public class Match3GameManager : MonoBehaviour
 {
     public enum BoardState { Idle, Swapping, Resolving, Refilling, CheckEnd }
@@ -39,8 +33,7 @@ public class Match3GameManager : MonoBehaviour
     public GravityDirection CurrentGravity { get; private set; }
     public int MovesLeft { get; private set; }
 
-    // Events: Presentation and UI layers subscribe to these rather than
-    // GameManager calling rendering/audio methods directly.
+    
     public event System.Action<int, int, int, int> OnTilesSwapped;
     public event System.Action<int, int, int, int> OnTilesSwapFailed;
     public event System.Action<List<List<BoardCoord>>> OnMatchesFound;
@@ -56,9 +49,7 @@ public class Match3GameManager : MonoBehaviour
     private int score;
     private bool isProcessingSwap;
 
-    // ====================================================================
-    //  VIEW-FACING ACCESSORS
-    // ====================================================================
+   
     public string GetTileIdAt(int x, int y) => board.GetTile(x, y);
 
     public TileData GetTileDataById(string tileId)
@@ -72,7 +63,7 @@ public class Match3GameManager : MonoBehaviour
         CurrentGravity = GravityDirection.Down;
         MovesLeft = maxMoves;
 
-        // Auto-initialize default level objectives if none are set in the inspector
+      
         if (levelGoals == null || levelGoals.Count == 0)
         {
             levelGoals = new List<TileGoal>();
@@ -98,16 +89,14 @@ public class Match3GameManager : MonoBehaviour
 
     private void Start()
     {
-        // Fire initial event states so UI updates on load
+        
         OnScoreChanged?.Invoke(score);
         OnGoalsUpdated?.Invoke(levelGoals);
         OnGravityDirectionChanged?.Invoke(CurrentGravity);
         SetState(BoardState.Idle);
     }
 
-    // ====================================================================
-    //  STATE MACHINE
-    // ====================================================================
+
     public void SetState(BoardState newState)
     {
         CurrentState = newState;
@@ -136,9 +125,7 @@ public class Match3GameManager : MonoBehaviour
         }
     }
 
-    // ====================================================================
-    //  PLAYER INPUT ENTRY POINTS
-    // ====================================================================
+  
     public void TryPlayerSwap(int x1, int y1, int x2, int y2)
     {
         if (CurrentState != BoardState.Idle || isProcessingSwap) return;
@@ -157,7 +144,7 @@ public class Match3GameManager : MonoBehaviour
         var matchesAfterSwap = MatchResolver.FindMatches(board);
         if (matchesAfterSwap.Count == 0)
         {
-            // Invalid swap (no match) -> revert swap in model and notify view
+       
             board.SwapTiles(x1, y1, x2, y2);
             
             // Penalize wrong move: cost 1 move!
@@ -186,17 +173,14 @@ public class Match3GameManager : MonoBehaviour
         // Wait for double swap animation (swap + swap-back duration)
         yield return new WaitForSeconds(swapAnimDuration * 2.1f);
         isProcessingSwap = false;
-        SetState(BoardState.CheckEnd); // Check if we ran out of moves!
+        SetState(BoardState.CheckEnd); 
     }
 
-    /// <summary>
-    /// Action trigger to shift gravity. Consumes 1 move and clears 3 random tiles
-    /// to cause elements to slide and cascade in the new direction.
-    /// </summary>
+
     public void TryGravityShift(GravityDirection newDirection)
     {
         if (CurrentState != BoardState.Idle || isProcessingSwap) return;
-        if (newDirection == CurrentGravity) return; // No redundancy
+        if (newDirection == CurrentGravity) return; 
 
         isProcessingSwap = true;
         SetState(BoardState.Swapping);
@@ -211,14 +195,14 @@ public class Match3GameManager : MonoBehaviour
 
         if (AudioManager.Instance != null) AudioManager.Instance.PlayGravityShift();
 
-        // Wait for clear punch animation to complete before sliding (refilling)
+
         StartCoroutine(CompleteGravityShiftRoutine());
     }
 
     private IEnumerator CompleteGravityShiftRoutine()
     {
         yield return new WaitForSeconds(resolveStepDelay * 1.1f);
-        SetState(BoardState.Refilling); // Go directly to refilling to slide and spawn!
+        SetState(BoardState.Refilling); 
     }
 
     public void RestartGame()
@@ -246,9 +230,7 @@ public class Match3GameManager : MonoBehaviour
         SetState(BoardState.Idle);
     }
 
-    // ====================================================================
-    //  COROUTINES
-    // ====================================================================
+
     private IEnumerator ResolveMatchesRoutine()
     {
         var matches = MatchResolver.FindMatches(board);
@@ -267,7 +249,7 @@ public class Match3GameManager : MonoBehaviour
             allCoords.AddRange(group);
             roundScore += ScoreForGroup(group);
 
-            // Record goals!
+           
             TrackObjectivesForGroup(group);
         }
 
@@ -284,7 +266,7 @@ public class Match3GameManager : MonoBehaviour
 
     private IEnumerator RefillRoutine()
     {
-        // 1. Let existing tiles fall
+    
         var moves = board.ApplyGravity(CurrentGravity);
         if (moves.Count > 0)
         {
@@ -292,7 +274,7 @@ public class Match3GameManager : MonoBehaviour
             yield return new WaitForSeconds(resolveStepDelay);
         }
 
-        // 2. Spawn and slide in refilled tiles
+      
         var spawnMoves = board.FillEmptyCellsAndGetMoves(CurrentGravity, RandomTileId);
         if (spawnMoves.Count > 0)
         {
@@ -300,7 +282,7 @@ public class Match3GameManager : MonoBehaviour
             yield return new WaitForSeconds(resolveStepDelay);
         }
 
-        // 3. Check for cascades
+
         var cascadeMatches = MatchResolver.FindMatches(board);
         SetState(cascadeMatches.Count > 0 ? BoardState.Resolving : BoardState.CheckEnd);
     }
@@ -309,7 +291,7 @@ public class Match3GameManager : MonoBehaviour
     {
         isProcessingSwap = false;
 
-        // Verify objective goals
+    
         bool allGoalsMet = true;
         if (levelGoals != null && levelGoals.Count > 0)
         {
@@ -331,22 +313,20 @@ public class Match3GameManager : MonoBehaviour
         {
             if (AudioManager.Instance != null) AudioManager.Instance.PlayVictory();
             OnGameEnded?.Invoke(true);
-            yield break; // Game terminates, wait for restart
+            yield break; 
         }
         else if (MovesLeft <= 0)
         {
             if (AudioManager.Instance != null) AudioManager.Instance.PlayDefeat();
             OnGameEnded?.Invoke(false);
-            yield break; // Game terminates, wait for restart
+            yield break; 
         }
 
         yield return null;
         SetState(BoardState.Idle);
     }
 
-    // ====================================================================
-    //  HELPERS
-    // ====================================================================
+    
     private void ClearRandomTiles(int count)
     {
         var targetCoords = new List<BoardCoord>();
@@ -361,7 +341,7 @@ public class Match3GameManager : MonoBehaviour
             }
         }
 
-        // Shuffle eligible positions
+       
         for (int i = 0; i < eligibleCoords.Count; i++)
         {
             int temp = Random.Range(i, eligibleCoords.Count);
@@ -377,13 +357,13 @@ public class Match3GameManager : MonoBehaviour
             cleared++;
         }
 
-        // Record goals for these cleared tiles too, giving player progress for gravity shifts!
+        
         TrackObjectivesForCoords(targetCoords);
 
         board.ClearTiles(targetCoords);
 
-        // Repurpose the match visual flow: view will run scale fade-out on these
-        var mockMatchList = new List<List<BoardCoord>> { targetCoords };
+        
+         var mockMatchList = new List<List<BoardCoord>> { targetCoords };
         OnMatchesFound?.Invoke(mockMatchList);
     }
 
@@ -436,9 +416,7 @@ public class Match3GameManager : MonoBehaviour
 
     private void PopulateInitialBoard()
     {
-        // Loop and spawn tiles. To avoid initial matches that confuse players,
-        // we check and generate a color that doesn't form a match-3.
-        for (int x = 0; x < boardWidth; x++)
+         for (int x = 0; x < boardWidth; x++)
         {
             for (int y = 0; y < boardHeight; y++)
             {
@@ -453,7 +431,7 @@ public class Match3GameManager : MonoBehaviour
         List<string> options = new List<string>();
         foreach (var t in availableTileTypes) options.Add(t.tileId);
 
-        // Shuffle options
+
         for (int i = 0; i < options.Count; i++)
         {
             int temp = Random.Range(i, options.Count);

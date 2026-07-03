@@ -1,10 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// A simple, self-contained Singleton AudioManager that generates and caches
-/// procedural audio clips on start, and plays them when requested by game systems.
-/// Supports lazy-initialization to work without prior scene configuration.
-/// </summary>
+
 [RequireComponent(typeof(AudioSource))]
 public class AudioManager : MonoBehaviour
 {
@@ -50,7 +46,7 @@ public class AudioManager : MonoBehaviour
             audioSource = gameObject.AddComponent<AudioSource>();
         }
 
-        // Generate and cache SFX clips procedurally
+        // SFX clips 
         selectClip = ProceduralAudioSynth.CreateBeep();
         swapClip = ProceduralAudioSynth.CreateSlide();
         matchClip = ProceduralAudioSynth.CreateChime();

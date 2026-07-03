@@ -1,10 +1,8 @@
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// A screen/board shaking component to give visual impact and feedback during major events.
-/// Supports lazy-initialization to automatically find and hook onto the Main Camera at runtime.
-/// </summary>
+
+
 public class BoardShake : MonoBehaviour
 {
     private static BoardShake instance;
@@ -45,9 +43,8 @@ public class BoardShake : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Trigger a shake action with specified time and strength.
-    /// </summary>
+    
+    
     public void Shake(float duration = 0.2f, float magnitude = 0.1f)
     {
         if (gameObject.activeInHierarchy)

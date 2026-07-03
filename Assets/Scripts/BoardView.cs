@@ -2,17 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Presentation layer for the match-3 board. Renders tiles, handles mouse inputs
-/// (selection & swaps) and keyboard gravity inputs, triggers board shake,
-/// manages smooth movement animations, and spawns particle VFX.
-/// Spawns its own dark grid background slots and a dynamic world-space HUD.
-/// </summary>
+
 public class BoardView : MonoBehaviour
 {
     [Header("Wiring")]
     public Match3GameManager gameManager;
-    public GameObject tilePrefab;       // Simple prefab with a SpriteRenderer
+    public GameObject tilePrefab;       
     public float cellSize = 1f;
     public Vector2 boardOrigin = Vector2.zero;
 
@@ -21,9 +16,11 @@ public class BoardView : MonoBehaviour
     public float matchPunchSeconds = 0.18f;
     public float matchPunchScale = 1.3f;
 
-    [Header("Visual Layout")]
-    [Tooltip("Enlarges the tile local scale factor (1.0 = normal size)")]
     public float tileScale = 1.15f;
+
+    [Header("Camera Background")]
+    [Tooltip("Drag and drop your custom background Sprite here. Scales automatically to fill the screen.")]
+    public Sprite customBackgroundSprite;
 
     private GameObject[,] tileViews;
     private Vector2Int? firstSelected;
@@ -42,12 +39,13 @@ public class BoardView : MonoBehaviour
 
         tileViews = new GameObject[gameManager.boardWidth, gameManager.boardHeight];
         
-        // Spawn layout styling
+      
+        SpawnCameraBackground();
         SpawnGridBackground();
         BuildInitialView();
         CreateWorldSpaceHUD();
 
-        // Subscribe to GameManager's events
+        
         gameManager.OnTilesSwapped += HandleTilesSwapped;
         gameManager.OnTilesSwapFailed += HandleTilesSwapFailed;
         gameManager.OnMatchesFound += HandleMatchesFound;
@@ -78,9 +76,7 @@ public class BoardView : MonoBehaviour
         }
     }
 
-    // ====================================================================
-    //  PLAYER INPUT (Mouse/Tap, Keyboard Gravity, and Restarts)
-    // ====================================================================
+
     private void Update()
     {
         // Allow keyboard shortcut 'R' to restart when game ends or at any time
@@ -92,10 +88,10 @@ public class BoardView : MonoBehaviour
 
         if (gameManager.CurrentState != Match3GameManager.BoardState.Idle || isGameEnded) return;
 
-        // 1. Keyboard Gravity Shift
+    
         HandleKeyboardGravityInput();
 
-        // 2. Mouse Selection/Swap
+
         if (Input.GetMouseButtonDown(0))
         {
             HandleMouseSelection();
@@ -146,7 +142,6 @@ public class BoardView : MonoBehaviour
             return;
         }
 
-        // Validate adjacent swap check in View to avoid redundant manager state locks
         bool adjacent = (Mathf.Abs(first.x - cell.Value.x) == 1 && first.y == cell.Value.y) ||
                         (Mathf.Abs(first.y - cell.Value.y) == 1 && first.x == cell.Value.x);
 
@@ -156,7 +151,7 @@ public class BoardView : MonoBehaviour
         }
         else
         {
-            // Tapped non-adjacent tile: treat it as selecting a new tile instead
+
             firstSelected = cell;
             SetHighlight(cell.Value, true);
             if (AudioManager.Instance != null) AudioManager.Instance.PlaySelect();
@@ -181,13 +176,11 @@ public class BoardView : MonoBehaviour
         view.transform.localScale = Vector3.one * tileScale * (on ? 1.15f : 1f);
     }
 
-    // ====================================================================
-    //  EVENT HANDLERS & VISUAL ANIMATIONS
-    // ====================================================================
+
     private void HandleTilesSwapped(int x1, int y1, int x2, int y2)
     {
         if (AudioManager.Instance != null) AudioManager.Instance.PlaySwap();
-        UpdateWorldHUD(); // Instant moves update on swap trigger!
+        UpdateWorldHUD(); 
         StartCoroutine(AnimateSwap(x1, y1, x2, y2));
     }
 
@@ -197,7 +190,7 @@ public class BoardView : MonoBehaviour
         GameObject b = tileViews[x2, y2];
         if (a == null || b == null) yield break;
 
-        // Swap instantly so visual matches target the correct objects during resolutions
+       
         tileViews[x1, y1] = b;
         tileViews[x2, y2] = a;
 
@@ -220,7 +213,7 @@ public class BoardView : MonoBehaviour
 
     private void HandleTilesSwapFailed(int x1, int y1, int x2, int y2)
     {
-        UpdateWorldHUD(); // Instant moves update on swap failed trigger!
+        UpdateWorldHUD(); 
         StartCoroutine(AnimateFailedSwap(x1, y1, x2, y2));
     }
 
@@ -234,7 +227,7 @@ public class BoardView : MonoBehaviour
         Vector3 posB = b.transform.position;
         float t = 0f;
 
-        // Slide towards each other
+      
         while (t < swapAnimSeconds)
         {
             t += Time.deltaTime;
@@ -244,7 +237,7 @@ public class BoardView : MonoBehaviour
             yield return null;
         }
 
-        // Slide back
+      
         t = 0f;
         while (t < swapAnimSeconds)
         {
@@ -269,7 +262,7 @@ public class BoardView : MonoBehaviour
             }
         }
 
-        // Add impact shake!
+    
         if (BoardShake.Instance != null)
         {
             BoardShake.Instance.Shake(0.18f, 0.07f);
@@ -281,7 +274,7 @@ public class BoardView : MonoBehaviour
         GameObject view = tileViews[x, y];
         if (view == null) yield break;
 
-        // Spawn visual burst particles matching the tile's sprite
+        
         string tileId = gameManager.GetTileIdAt(x, y);
         TileData data = gameManager.GetTileDataById(tileId);
         if (data != null && TileVFX.Instance != null)
@@ -301,7 +294,7 @@ public class BoardView : MonoBehaviour
         }
 
         Destroy(view);
-        // Safely set null only if it hasn't been replaced by a fall slide
+       
         if (tileViews[x, y] == view)
         {
             tileViews[x, y] = null;
@@ -360,7 +353,7 @@ public class BoardView : MonoBehaviour
         if (renderer != null && data != null)
         {
             renderer.sprite = data.sprite;
-            renderer.color = GetTileColor(data); // Apply color tinting
+            renderer.color = GetTileColor(data); 
         }
 
         tileViews[spawn.DestX, spawn.DestY] = view;
@@ -420,20 +413,20 @@ public class BoardView : MonoBehaviour
 
         float centerX = boardOrigin.x + (gameManager.boardWidth - 1) * cellSize / 2f;
         float centerY = boardOrigin.y + (gameManager.boardHeight - 1) * cellSize / 2f;
-        gameOverOverlayGo.transform.position = new Vector3(centerX, centerY, -5f); // Render in front
+        gameOverOverlayGo.transform.position = new Vector3(centerX, centerY, -5f); 
 
-        // Add a semi-transparent black backing panel to dim the board
+      
         GameObject panelGo = new GameObject("DimPanel");
         panelGo.transform.SetParent(gameOverOverlayGo.transform);
         panelGo.transform.localPosition = Vector3.zero;
         panelGo.transform.localScale = new Vector3(gameManager.boardWidth * cellSize + 0.5f, gameManager.boardHeight * cellSize + 0.5f, 1f);
 
         SpriteRenderer panelSr = panelGo.AddComponent<SpriteRenderer>();
-        panelSr.sprite = GetFlatSprite(); // Use crisp flat sprite to avoid stretching
+        panelSr.sprite = GetFlatSprite(); 
         panelSr.color = new Color(0f, 0f, 0f, 0.8f);
-        panelSr.sortingOrder = 8; // In front of tiles, behind end text
+        panelSr.sortingOrder = 8;
 
-        // Add the Victory/Defeat text
+      
         GameObject textGo = new GameObject("EndText");
         textGo.transform.SetParent(gameOverOverlayGo.transform);
         textGo.transform.localPosition = new Vector3(0f, 0.6f, 0f);
@@ -449,7 +442,7 @@ public class BoardView : MonoBehaviour
         MeshRenderer mr = textGo.GetComponent<MeshRenderer>();
         if (mr != null) mr.sortingOrder = 9;
 
-        // Add subtext instructions
+        
         GameObject subTextGo = new GameObject("EndSubText");
         subTextGo.transform.SetParent(gameOverOverlayGo.transform);
         subTextGo.transform.localPosition = new Vector3(0f, -0.6f, 0f);
@@ -467,7 +460,7 @@ public class BoardView : MonoBehaviour
         MeshRenderer subMr = subTextGo.GetComponent<MeshRenderer>();
         if (subMr != null) subMr.sortingOrder = 9;
 
-        // Trigger scale-punch animation
+       
         StartCoroutine(PunchOverlay(gameOverOverlayGo));
     }
 
@@ -480,7 +473,7 @@ public class BoardView : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
-            // Elastic pop curve
+           
             float scale = Mathf.Sin(t * Mathf.PI * 0.5f) * 1.05f;
             if (t >= 0.9f) scale = Mathf.Lerp(1.05f, 1.0f, (t - 0.9f) / 0.1f);
             overlay.transform.localScale = Vector3.one * scale;
@@ -489,18 +482,14 @@ public class BoardView : MonoBehaviour
         overlay.transform.localScale = Vector3.one;
     }
 
-    // ====================================================================
-    //  SCORE FEEDBACK WRAPPERS
-    // ====================================================================
+
     public event System.Action<int> OnScoreDisplayChanged;
     private void HandleScoreChanged(int newScore)
     {
         OnScoreDisplayChanged?.Invoke(newScore);
     }
 
-    // ====================================================================
-    //  VIEW CONSTRUCTION HELPERS
-    // ====================================================================
+
     private void BuildInitialView()
     {
         for (int x = 0; x < gameManager.boardWidth; x++)
@@ -525,10 +514,36 @@ public class BoardView : MonoBehaviour
         if (renderer != null && data != null)
         {
             renderer.sprite = data.sprite;
-            renderer.color = GetTileColor(data); // Apply color tinting
+            renderer.color = GetTileColor(data); 
         }
 
         tileViews[x, y] = view;
+    }
+
+    private void SpawnCameraBackground()
+    {
+        if (customBackgroundSprite == null) return;
+
+        GameObject bgGo = new GameObject("CustomCameraBackground");
+        // Place behind the board (Z = 10) centered on the camera's X/Y position
+        Vector3 camPos = Camera.main.transform.position;
+        bgGo.transform.position = new Vector3(camPos.x, camPos.y, 10f);
+
+        SpriteRenderer sr = bgGo.AddComponent<SpriteRenderer>();
+        sr.sprite = customBackgroundSprite;
+        sr.sortingOrder = -10; // Backmost sorting layer
+
+        // Auto-scale to fill the camera viewport (crop-fill)
+        float orthoHeight = Camera.main.orthographicSize * 2.0f;
+        float orthoWidth = orthoHeight * Camera.main.aspect;
+        Vector2 spriteSize = customBackgroundSprite.bounds.size;
+
+        if (spriteSize.x > 0 && spriteSize.y > 0)
+        {
+            float scaleX = orthoWidth / spriteSize.x;
+            float scaleY = orthoHeight / spriteSize.y;
+            bgGo.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+        }
     }
 
     private void SpawnGridBackground()
@@ -537,14 +552,14 @@ public class BoardView : MonoBehaviour
         bgParent = new GameObject("GridBackground");
         bgParent.transform.SetParent(transform);
 
-        // Generate a crisp, 1x1 white sprite to avoid stretching shaped tile sprites
-        Sprite bgSprite = GetFlatSprite();
+       
+       Sprite bgSprite = GetFlatSprite();
 
         float centerX = boardOrigin.x + (gameManager.boardWidth - 1) * cellSize / 2f;
         float centerY = boardOrigin.y + (gameManager.boardHeight - 1) * cellSize / 2f;
         Vector3 boardCenter = new Vector3(centerX, centerY, 0f);
 
-        // 1. Clean, minimalist semi-transparent dark charcoal base
+      
         GameObject boardBaseGo = new GameObject("BoardSlateBase");
         boardBaseGo.transform.SetParent(bgParent.transform);
         boardBaseGo.transform.position = boardCenter;
@@ -552,10 +567,10 @@ public class BoardView : MonoBehaviour
 
         SpriteRenderer baseSr = boardBaseGo.AddComponent<SpriteRenderer>();
         baseSr.sprite = bgSprite;
-        baseSr.color = new Color(0.04f, 0.05f, 0.07f, 0.85f); // Deep dark slate backing
+        baseSr.color = new Color(0.04f, 0.05f, 0.07f, 0.85f); 
         baseSr.sortingOrder = -3;
 
-        // 2. Subtle inset slot templates to differentiate cells
+        
         for (int x = 0; x < gameManager.boardWidth; x++)
         {
             for (int y = 0; y < gameManager.boardHeight; y++)
@@ -567,7 +582,7 @@ public class BoardView : MonoBehaviour
 
                 SpriteRenderer sr = slot.AddComponent<SpriteRenderer>();
                 sr.sprite = bgSprite;
-                sr.color = new Color(0.01f, 0.02f, 0.03f, 0.7f); // Deep dark inset slot
+                sr.color = new Color(0.01f, 0.02f, 0.03f, 0.7f); 
                 sr.sortingOrder = -2;
             }
         }
@@ -578,19 +593,19 @@ public class BoardView : MonoBehaviour
         GameObject hudGo = new GameObject("WorldSpaceHUD");
         hudGo.transform.SetParent(transform);
 
-        // Place it directly to the right side of the board
+       
         float hudX = boardOrigin.x + gameManager.boardWidth * cellSize + 0.6f;
         float hudY = boardOrigin.y + gameManager.boardHeight * cellSize - 0.2f;
         hudGo.transform.position = new Vector3(hudX, hudY, 0f);
 
         worldHUDText = hudGo.AddComponent<TextMesh>();
         worldHUDText.fontSize = 28;
-        worldHUDText.characterSize = 0.11f; // Slightly smaller to ensure fit
+        worldHUDText.characterSize = 0.11f; 
         worldHUDText.alignment = TextAlignment.Left;
         worldHUDText.anchor = TextAnchor.UpperLeft;
         worldHUDText.color = Color.white;
 
-        // Hook game events to trigger HUD updates
+        
         gameManager.OnScoreChanged += UpdateWorldHUD;
         gameManager.OnGoalsUpdated += UpdateWorldHUD;
         gameManager.OnGravityDirectionChanged += UpdateWorldHUD;
@@ -651,7 +666,7 @@ public class BoardView : MonoBehaviour
     {
         if (data == null) return Color.white;
         
-        // Fallback for transparent or plain white (uninitialized) tileColor values
+        
         if (data.tileColor.a < 0.05f || data.tileColor == Color.white)
         {
             string id = data.tileId.ToLower();

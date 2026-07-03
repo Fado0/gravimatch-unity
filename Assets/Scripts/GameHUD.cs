@@ -3,11 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// UI HUD controller. Subscribes to Match3GameManager events to render
-/// move counts, scores, tile goal collection status, current gravity direction,
-/// and victory/defeat screens.
-/// </summary>
+
 public class GameHUD : MonoBehaviour
 {
     public Match3GameManager gameManager;
@@ -50,7 +46,7 @@ public class GameHUD : MonoBehaviour
             endPanel.SetActive(false);
         }
 
-        // Initialize display values
+      
         RefreshAllDisplays();
     }
 
@@ -163,9 +159,7 @@ public class GameHUD : MonoBehaviour
         }
     }
 
-    // ====================================================================
-    //  PUBLIC gravity shift buttons callback helpers
-    // ====================================================================
+  
     public void ShiftGravityUp() => gameManager?.TryGravityShift(GravityDirection.Up);
     public void ShiftGravityDown() => gameManager?.TryGravityShift(GravityDirection.Down);
     public void ShiftGravityLeft() => gameManager?.TryGravityShift(GravityDirection.Left);
