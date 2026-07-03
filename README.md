@@ -6,7 +6,7 @@ Unlike standard match-3 games where gravity always pulls tiles downwards, GraviM
 
 ---
 
-## 🚀 Key Features
+##  Key Features
 
 *   **Four-Way Board Gravity**: Slide tiles and refill cells in all four cardinal directions.
 *   **Tactical Gravity Shift**: Shifting gravity acts as an active move that shuffles the board and starts cascades.
@@ -18,7 +18,7 @@ Unlike standard match-3 games where gravity always pulls tiles downwards, GraviM
 
 ---
 
-## 🛠️ How to Open and Play
+## How to Open and Play
 
 ### Prerequisite
 *   **Unity Editor**: Unity 6000.0.66f2 or later is recommended (or any modern Unity version supporting C# 9.0 and NetStandard 2.1).
@@ -39,7 +39,7 @@ Unlike standard match-3 games where gravity always pulls tiles downwards, GraviM
 
 ---
 
-## 📂 Project Structure & Key Scripts
+##  Project Structure & Key Scripts
 
 The system logic is divided into modular folders in `Assets/Scripts`:
 
@@ -57,16 +57,4 @@ The system logic is divided into modular folders in `Assets/Scripts`:
 *   **Audio Engine**:
     *   [`ProceduralAudioSynth.cs`](file:///c:/Users/faad1/Desktop/SAVVY/Assets/Scripts/ProceduralAudioSynth.cs): DSP synthesizer that builds WAV-like wave buffers in memory for retro sound effects.
     *   [`AudioManager.cs`](file:///c:/Users/faad1/Desktop/SAVVY/Assets/Scripts/AudioManager.cs): Caches and plays synthesized audio.
-
----
-
-## 🎨 Architectural Decisions & Code Quality
-
-### Decoupling
-By keeping core mechanics inside `BoardModel` and `MatchResolver` as pure C# scripts, we separate the logic of matching grids from Unity rendering components. If you decide to port this system to a 3D board, a VR interface, or a console application, only the `BoardView` and `GameHUD` scripts would need to be rewritten.
-
-### Zero Scene Friction (Self-Wiring Singletons)
-Managers use a lazy-initialized singleton. If they are referenced but missing from the scene hierarchy, they auto-instantiate themselves, configure themselves, and bind onto relevant objects (e.g. `BoardShake` finds the `Camera.main` and attaches itself as a component), making integration fully automatic.
-
-### DSP Synthesized Audio
-Rather than forcing download size overhead for sound assets, the project uses a script-based synthesizer. On game startup, it generates sine waves, frequency sweeps, and arpeggios, compiling them into memory-cached `AudioClip` elements.
+roject uses a script-based synthesizer. On game startup, it generates sine waves, frequency sweeps, and arpeggios, compiling them into memory-cached `AudioClip` elements.
